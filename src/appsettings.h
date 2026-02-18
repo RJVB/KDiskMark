@@ -63,6 +63,9 @@ public:
     void setRandomReadPercentage(int randomReadPercentage);
     static int defaultRandomReadPercentage();
 
+    QString getIOEngineName() const;
+    void setIOEngineName(const QString &engineName);
+
     bool getCacheBypassState() const;
     void setCacheBypassState(bool cacheBypassState);
     static bool defaultCacheBypassState();

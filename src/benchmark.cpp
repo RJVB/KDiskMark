@@ -77,7 +77,8 @@ void Benchmark::startTest(int blockSize, int queueDepth, int threads, const QStr
                                                             settings.getBenchmarkTestData() == Global::BenchmarkTestData::Zeros,
                                                             settings.getCacheBypassState(),
                                                             settings.getContinuousGenerationState(),
-                                                            blockSize, queueDepth, threads, rw));
+                                                            blockSize, queueDepth, threads, rw,
+                                                            settings.getIOEngineName()));
 
         if (!isRunning()) return;
 

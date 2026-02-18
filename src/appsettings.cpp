@@ -208,6 +208,16 @@ int AppSettings::defaultRandomReadPercentage()
     return 70;
 }
 
+QString AppSettings::getIOEngineName() const
+{
+    return m_settings->value(QStringLiteral("Benchmark/IOEngine"), QStringLiteral("")).toString();
+}
+
+void AppSettings::setIOEngineName(const QString &engineName)
+{
+    m_settings->setValue(QStringLiteral("Benchmark/IOEngine"), engineName);
+}
+
 bool AppSettings::getCacheBypassState() const
 {
     return m_settings->value(QStringLiteral("Benchmark/BypassCache"), defaultCacheBypassState()).toBool();

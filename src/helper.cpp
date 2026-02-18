@@ -91,11 +91,11 @@ QVariantMap HelperAdaptor::prepareBenchmarkFile(const QString &benchmarkFile, in
 }
 
 QVariantMap HelperAdaptor::startBenchmarkTest(int measuringTime, int fileSize, int randomReadPercentage, bool fillZeros, bool cacheBypass, bool continuousGeneration,
-                                              int blockSize, int queueDepth, int threads, const QString &rw)
+                                              int blockSize, int queueDepth, int threads, const QString &rw, const QString &engine)
 {
     return m_parentHelper->startBenchmarkTest(
       measuringTime, fileSize, randomReadPercentage, fillZeros, cacheBypass,
-      continuousGeneration, blockSize, queueDepth, threads, rw);
+      continuousGeneration, blockSize, queueDepth, threads, rw, engine);
 }
 
 QVariantMap HelperAdaptor::flushPageCache()
@@ -284,7 +284,7 @@ QVariantMap Helper::prepareBenchmarkFile(const QString &benchmarkPath, int fileS
 }
 
 QVariantMap Helper::startBenchmarkTest(int measuringTime, int fileSize, int randomReadPercentage, bool fillZeros, bool cacheBypass, bool continuousGeneration,
-                                       int blockSize, int queueDepth, int threads, const QString &rw)
+                                       int blockSize, int queueDepth, int threads, const QString &rw, const QString &engine)
 {
     if (!isCallerAuthorized()) {
         return {};
@@ -294,10 +294,13 @@ QVariantMap Helper::startBenchmarkTest(int measuringTime, int fileSize, int rand
         return {{"success", false}, {"error", "The benchmark file was not pre-created."}};
     }
 
+    QStringList arguments = {QStringLiteral("--output-format=json")};
+    if (engine != "fio-default") {
+        arguments << QStringLiteral("--ioengine=") + engine;
+    }
+
     m_process = new QProcess();
-    m_process->start("fio", QStringList()
-                     << QStringLiteral("--output-format=json")
-                     << QStringLiteral("--ioengine=libaio")
+    m_process->start("fio", arguments
                      << QStringLiteral("--randrepeat=0")
                      << QStringLiteral("--refill_buffers=%1").arg(continuousGeneration)
                      << QStringLiteral("--end_fsync=1")

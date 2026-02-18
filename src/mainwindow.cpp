@@ -1,6 +1,9 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
+#ifdef __linux__
+#include <sys/utsname.h>
+#endif
 #include <QMessageBox>
 #include <QStorageInfo>
 #include <QMetaEnum>
@@ -187,6 +190,62 @@ MainWindow::MainWindow(QWidget *parent)
     ui->actionTheme_Stylesheet_Light->setChecked(settings.getTheme() == Global::Theme::StyleSheetLight);
     ui->actionTheme_Stylesheet_Dark->setChecked(settings.getTheme() ==Global::Theme::StyleSheetDark);
     ui->actionTheme_Do_not_apply->setChecked(settings.getTheme() == Global::Theme::DoNotApply);
+
+    QActionGroup *engineGroup = new QActionGroup(this);
+    QAction *ioAction, *defaultIOAction = nullptr;
+    ui->menuIOEngines->setToolTip("The I/O engine to be used by fio\nSee `man fio`");
+#ifdef __linux__
+    ioAction = ui->menuIOEngines->addAction("libaio");
+    ioAction->setActionGroup(engineGroup);
+    ioAction->setCheckable(true);
+    ioAction->setWhatsThis("Linux-native asynchronous I/O");
+    defaultIOAction = ioAction;
+    struct utsname u;
+    uname(&u);
+    auto kversion = QString::fromLatin1(u.version).split(".").mid(0,1).join(".").toDouble();
+    ioAction = ui->menuIOEngines->addAction("io_uring");
+    ioAction->setActionGroup(engineGroup);
+    if (kversion >= 5.1) {
+        ioAction->setCheckable(true);
+    } else {
+        ioAction->setEnabled(false);
+    }
+    ioAction->setWhatsThis("Fast Linux-native asynchronous I/O (5.1+ kernels)");
+#endif
+#if defined(__APPLE__) || defined(__unix__) || defined(_POSIX_C_SOURCE)
+    ioAction = ui->menuIOEngines->addAction("posixaio");
+    ioAction->setActionGroup(engineGroup);
+    ioAction->setCheckable(true);
+    ioAction->setWhatsThis("POSIX (cross-platform) asynchronous I/O");
+    if (!defaultIOAction) {
+        defaultIOAction = ioAction;
+    }
+#endif
+    ioAction = ui->menuIOEngines->addAction("fio-default");
+    ioAction->setActionGroup(engineGroup);
+    ioAction->setCheckable(true);
+    ioAction->setWhatsThis("Let fio use its default ioengine");
+    if (!defaultIOAction) {
+        defaultIOAction = ioAction;
+    }
+    // restore the previous setting
+    if (!settings.getIOEngineName().isEmpty()) {
+        const auto actions = engineGroup->actions();
+        const QString name = settings.getIOEngineName();
+        for (QAction *act : actions) {
+            if (act->text() == name && act->isEnabled()) {
+                defaultIOAction = act;
+                break;
+            }
+        }
+    }
+    connect(engineGroup, &QActionGroup::triggered, this, [=](QAction *act) {
+        AppSettings settings;
+        settings.setIOEngineName(act->text());
+    });
+    // this will set the default IOEngine in the settings without
+    // having to duplicate any platform-specific code.
+    defaultIOAction->trigger();
 
     updateProgressBarsStyle();
 
@@ -654,9 +713,14 @@ QString MainWindow::getTextBenchmarkResult()
 
     QString profiles[] = { "Default", "Peak Performance", "Real World Performance", "Demo" };
 
+    auto ioengine = settings.getIOEngineName();
+    if (ioengine != "fio-default") {
+        ioengine = QStringLiteral("fio-") + ioengine;
+    }
     output << QString()
            << QStringLiteral("Profile: %1%2")
               .arg(profiles[(int)settings.getPerformanceProfile()]).arg(settings.getMixedState() ? " [+Mix]" : QString())
+           << QStringLiteral(" Engine: %1").arg(ioengine)
            << QStringLiteral("   Test: %1")
               .arg("%1 %2 (x%3) [Measure: %4 %5 / Interval: %6 %7]")
               .arg(settings.getFileSize() >= 1024 ? settings.getFileSize() / 1024 : settings.getFileSize())
@@ -983,7 +1047,13 @@ void MainWindow::benchmarkFailed(const QString &error)
 
 void MainWindow::benchmarkStatusUpdate(const QString &name)
 {
-    setWindowTitle(QStringLiteral("%1 - %2").arg(m_windowTitle, name));
+    AppSettings settings;
+    const auto ioEngine = settings.getIOEngineName();
+    if (!ioEngine.isEmpty()) {
+        setWindowTitle(QStringLiteral("%1[fio:%2] - %3").arg(m_windowTitle, ioEngine, name));
+    } else {
+        setWindowTitle(QStringLiteral("%1 - %2").arg(m_windowTitle, name));
+    }
 }
 
 void MainWindow::handleResults(QProgressBar *progressBar, const Benchmark::PerformanceResult &result)

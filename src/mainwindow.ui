@@ -1040,6 +1040,12 @@
     <addaction name="separator"/>
     <addaction name="actionQueues_Threads"/>
     <addaction name="separator"/>
+    <widget class="QMenu" name="menuIOEngines">
+     <property name="title">
+      <string>I/O Engine</string>
+     </property>
+    </widget>
+    <addaction name="menuIOEngines"/>
     <addaction name="actionUse_O_DIRECT"/>
     <addaction name="actionFlush_Pagecache"/>
     <addaction name="actionCoW_detection"/>

@@ -24,7 +24,7 @@ public slots:
     Q_SCRIPTABLE QVariantMap startBenchmarkTest(
         int measuringTime, int fileSize, int randomReadPercentage,
         bool fillZeros, bool cacheBypass, bool continuousGeneration,
-        int blockSize, int queueDepth, int threads, const QString &rw);
+        int blockSize, int queueDepth, int threads, const QString &rw, const QString &engine);
     Q_SCRIPTABLE QVariantMap flushPageCache();
     Q_SCRIPTABLE QVariantMap removeBenchmarkFile();
     Q_SCRIPTABLE QVariantMap stopCurrentTask();
@@ -53,7 +53,7 @@ public:
                                    int randomReadPercentage, bool fillZeros,
                                    bool cacheBypass, bool continuousGeneration,
                                    int blockSize, int queueDepth, int threads,
-                                   const QString &rw);
+                                   const QString &rw, const QString &engine);
     QVariantMap flushPageCache();
     QVariantMap removeBenchmarkFile();
     QVariantMap stopCurrentTask();
