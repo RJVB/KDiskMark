@@ -20,6 +20,10 @@
 #include "storageitemdelegate.h"
 #include "global.h"
 
+#ifndef USE_PRIVILEGED_HELPER
+#warning "This build does not use a privileged helper application!"
+#endif
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
@@ -170,7 +174,13 @@ MainWindow::MainWindow(QWidget *parent)
     ui->actionWrite_Mix->setChecked(settings.getBenchmarkMode() == Global::BenchmarkMode::WriteMix);
 
     ui->actionUse_O_DIRECT->setChecked(settings.getCacheBypassState());
+#ifdef USE_PRIVILEGED_HELPER
     ui->actionFlush_Pagecache->setChecked(settings.getFlusingCacheState());
+#else
+    ui->actionFlush_Pagecache->setChecked(false);
+    ui->actionFlush_Pagecache->setEnabled(false);
+    ui->actionFlush_Pagecache->setToolTip(tr("Only available in builds that require root privileges"));
+#endif
     ui->actionCoW_detection->setChecked(settings.getCoWDetectionState());
     ui->loopsCount->setValue(settings.getLoopsCount());
 
@@ -402,7 +412,9 @@ void MainWindow::on_actionTestData_Continuous_triggered(bool checked) {
 
 void MainWindow::on_actionFlush_Pagecache_triggered(bool checked)
 {
+#ifdef USE_PRIVILEGED_HELPER
     AppSettings().setFlushingCacheState(checked);
+#endif
 }
 
 void MainWindow::on_actionCoW_detection_triggered(bool checked)

@@ -13,18 +13,25 @@ include_directories(${PROJECT_BINARY_BIN})
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
+include(FeatureSummary)
+
 option(USE_QT5 "Use Qt5 instead of Qt6" OFF)
+option(USE_PRIVILEGED_HELPER "The benchmarking helper process runs as root" ON)
 
 if(USE_QT5)
     find_package(Qt5 COMPONENTS Widgets LinguistTools DBus REQUIRED)
-    find_package(PolkitQt5-1 REQUIRED)
     set(QT_LIBS Qt5::Widgets Qt5::DBus)
-    set(POLKIT_LIB PolkitQt5-1::Core)
+    if (USE_PRIVILEGED_HELPER)
+        find_package(PolkitQt5-1 REQUIRED)
+        set(POLKIT_LIB PolkitQt5-1::Core)
+    endif()
 else()
     find_package(Qt6 COMPONENTS Widgets LinguistTools DBus REQUIRED)
-    find_package(PolkitQt6-1 REQUIRED)
     set(QT_LIBS Qt6::Widgets Qt6::DBus)
-    set(POLKIT_LIB PolkitQt6-1::Core)
+    if (USE_PRIVILEGED_HELPER)
+        find_package(PolkitQt6-1 REQUIRED)
+        set(POLKIT_LIB PolkitQt6-1::Core)
+    endif()
 endif()
 
 set(CMAKE_AUTOUIC ON)
@@ -136,6 +143,13 @@ add_executable(${PROJECT_NAME}
     src/diskdriveinfo.cpp
 )
 
+if (USE_PRIVILEGED_HELPER)
+    set_property(SOURCE
+        src/mainwindow.cpp
+        src/benchmark.cpp
+        APPEND PROPERTY COMPILE_DEFINITIONS USE_PRIVILEGED_HELPER)
+endif()
+
 target_link_libraries(${PROJECT_NAME} PRIVATE
     SingleApplication::SingleApplication
     ${QT_LIBS}
@@ -168,12 +182,26 @@ target_link_libraries(${PROJECT_NAME}_helper
     ${QT_LIBS}
     ${POLKIT_LIB}
 )
+if (USE_PRIVILEGED_HELPER)
+    set_target_properties(${PROJECT_NAME}_helper PROPERTIES
+        COMPILE_DEFINITIONS USE_PRIVILEGED_HELPER)
+endif()
 
 install(TARGETS ${PROJECT_NAME}_helper DESTINATION ${KDE_INSTALL_LIBEXECDIR})
-install(FILES data/dev.jonmagon.kdiskmark.helperinterface.conf DESTINATION ${KDE_INSTALL_DBUSDIR}/system.d)
 
-install(FILES data/dev.jonmagon.kdiskmark.helper.policy DESTINATION ${POLKITQT-1_POLICY_FILES_INSTALL_DIR})
-ecm_install_configured_files(
-    INPUT data/dev.jonmagon.kdiskmark.helperinterface.service.in
-    DESTINATION ${KDE_INSTALL_DBUSDIR}/system-services
-)
+if (USE_PRIVILEGED_HELPER)
+    install(FILES data/dev.jonmagon.kdiskmark.helper.policy DESTINATION ${POLKITQT-1_POLICY_FILES_INSTALL_DIR})
+    install(FILES data/dev.jonmagon.kdiskmark.helperinterface.conf DESTINATION ${KDE_INSTALL_DBUSDIR}/system.d)
+    ecm_install_configured_files(
+        INPUT data/dev.jonmagon.kdiskmark.helperinterface.service.in
+        DESTINATION ${KDE_INSTALL_DBUSDIR}/system-services
+    )
+else()
+    install(FILES data/nonpriv/dev.jonmagon.kdiskmark.helperinterface.conf DESTINATION ${KDE_INSTALL_DBUSDIR}/system.d)
+    ecm_install_configured_files(
+        INPUT data/nonpriv/dev.jonmagon.kdiskmark.helperinterface.service.in
+        DESTINATION ${KDE_INSTALL_DBUSDIR}/services
+    )
+endif()
+
+feature_summary(WHAT ALL   FATAL_ON_MISSING_REQUIRED_PACKAGES)

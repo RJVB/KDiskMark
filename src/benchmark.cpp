@@ -4,6 +4,10 @@
 
 #include "helper_interface.h"
 
+#ifndef USE_PRIVILEGED_HELPER
+#warning "This build does not use a privileged helper application!"
+#endif
+
 Benchmark::Benchmark()
 {
     m_running = false;
@@ -59,9 +63,11 @@ void Benchmark::startTest(int blockSize, int queueDepth, int threads, const QStr
             return;
         }
 
+#ifdef USE_PRIVILEGED_HELPER
         if (settings.getFlusingCacheState()) {
             handleDbusPendingCall(interface->flushPageCache());
         }
+#endif
 
         if (!isRunning()) return;
 
@@ -305,13 +311,13 @@ void Benchmark::runBenchmark(QList<QPair<QPair<Global::BenchmarkTest, Global::Be
 
 DevJonmagonKdiskmarkHelperInterface* Benchmark::helperInterface()
 {
-    if (!QDBusConnection::systemBus().isConnected()) {
-        emit failed(QDBusConnection::systemBus().lastError().message());
+    if (!QDBusConnection::sessionBus().isConnected()) {
+        emit failed(QDBusConnection::sessionBus().lastError().message());
         return nullptr;
     }
 
     auto *interface = new dev::jonmagon::kdiskmark::helper(QStringLiteral("dev.jonmagon.kdiskmark.helperinterface"),
-                QStringLiteral("/Helper"), QDBusConnection::systemBus(), this);
+                QStringLiteral("/Helper"), QDBusConnection::sessionBus(), this);
     interface->setTimeout(10 * 24 * 3600 * 1000); // 10 days
 
     return interface;

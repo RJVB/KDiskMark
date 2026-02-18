@@ -3,8 +3,12 @@
 #include <QCoreApplication>
 #include <QtDBus>
 #include <QFile>
+#ifdef USE_PRIVILEGED_HELPER
 #include <PolkitQt1/Authority>
 #include <PolkitQt1/Subject>
+#else
+#warning "This build does not use a privileged helper application!"
+#endif
 
 #include <signal.h>
 
@@ -70,14 +74,14 @@ QVariantMap HelperAdaptor::createNoCowDirectory(const QString &path)
 
 Helper::Helper() : m_helperAdaptor(new HelperAdaptor(this))
 {
-    if (!QDBusConnection::systemBus().isConnected() || !QDBusConnection::systemBus().registerService(QStringLiteral("dev.jonmagon.kdiskmark.helperinterface")) ||
-        !QDBusConnection::systemBus().registerObject(QStringLiteral("/Helper"), this)) {
-        qWarning() << QDBusConnection::systemBus().lastError().message();
+    if (!QDBusConnection::sessionBus().isConnected() || !QDBusConnection::sessionBus().registerService(QStringLiteral("dev.jonmagon.kdiskmark.helperinterface")) ||
+        !QDBusConnection::sessionBus().registerObject(QStringLiteral("/Helper"), this)) {
+        qWarning() << QDBusConnection::sessionBus().lastError().message();
         qApp->quit();
     }
 
     m_serviceWatcher = new QDBusServiceWatcher(this);
-    m_serviceWatcher->setConnection(QDBusConnection::systemBus());
+    m_serviceWatcher->setConnection(QDBusConnection::sessionBus());
     m_serviceWatcher->setWatchMode(QDBusServiceWatcher::WatchForUnregistration);
 
     connect(m_serviceWatcher, &QDBusServiceWatcher::serviceUnregistered, qApp, [this](const QString &service) {
@@ -93,6 +97,7 @@ Helper::Helper() : m_helperAdaptor(new HelperAdaptor(this))
 QVariantMap Helper::initSession()
 {
     if (!calledFromDBus()) {
+	   qWarning() << Q_FUNC_INFO << "not called via DBus!";
         return {};
     }
 
@@ -104,6 +109,7 @@ QVariantMap Helper::initSession()
         return {{"success", false}, {"error", "There are already registered DBus connection."}};
     }
 
+#ifdef USE_PRIVILEGED_HELPER
     PolkitQt1::SystemBusNameSubject subject(message().service());
     PolkitQt1::Authority *authority = PolkitQt1::Authority::instance();
 
@@ -118,7 +124,7 @@ QVariantMap Helper::initSession()
     e.exec();
 
     if (authority->hasError()) {
-        qDebug() << "Encountered error while checking authorization, error code: " << authority->lastError() << authority->errorDetails();
+        qCritical() << "Encountered error while checking authorization, error code: " << authority->lastError() << authority->errorDetails();
         authority->clearError();
     }
 
@@ -133,6 +139,11 @@ QVariantMap Helper::initSession()
             qApp->quit();
         return {};
     }
+#else
+        // track who called into us so we can close when all callers have gone away
+        m_serviceWatcher->addWatchedService(message().service());
+        return {{"success", true}};
+#endif
 }
 
 QVariantMap Helper::endSession()
