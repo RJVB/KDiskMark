@@ -1,8 +1,10 @@
 #include "mainwindow.h"
 
 #include <QApplication>
+#include <QCommandLineParser>
+#include <QStorageInfo>
 
-#include "singleapplication.h"
+// #include "singleapplication.h"
 #include "cmake.h"
 
 int main(int argc, char *argv[])
@@ -16,12 +18,24 @@ int main(int argc, char *argv[])
     QApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 #endif
 
-    SingleApplication a(argc, argv);
+    QApplication a(argc, argv);
+
+    QCommandLineParser parser;
+    parser.setApplicationDescription("Disk benchmark application");
+    parser.addHelpOption();
+    parser.addVersionOption();
+    parser.addPositionalArgument("<benchmark directory>", "the directory to test in");
+
+    parser.process(a);
+    const QStringList args = parser.positionalArguments();
 
     AppSettings().setupLocalization();
 
     MainWindow w;
     w.setFixedSize(w.size());
+    if (!args.isEmpty() && !args.at(0).isEmpty()) {
+        w.setTargetDirectory(args.at(0));
+    }
     w.show();
 
     return a.exec();

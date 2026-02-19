@@ -278,6 +278,23 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
+void MainWindow::setTargetDirectory(const QString &dir)
+{
+    QStorageInfo volume(dir);
+
+    Global::Storage storage {
+        .path = dir,
+        .bytesTotal = volume.bytesTotal(),
+        .bytesOccupied = volume.bytesTotal() - volume.bytesFree(),
+        .formatedSize = formatSize(storage.bytesOccupied, storage.bytesTotal),
+        .permanentInList = true
+    };
+    addItemToStoragesList(storage);
+    resizeComboBoxItemsPopup(ui->comboBox_Storages);
+
+    ui->comboBox_Storages->setCurrentIndex(ui->comboBox_Storages->count() - 1);
+}
+
 void MainWindow::closeEvent(QCloseEvent *)
 {
     if (m_benchmark->isRunning()) {

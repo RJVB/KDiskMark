@@ -22,6 +22,8 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+    void setTargetDirectory(const QString &dir);
+
 private slots:
     void on_pushButton_Test_1_clicked();
 
