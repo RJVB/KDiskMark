@@ -43,8 +43,6 @@ QString DiskDriveInfo::getModelName(const QString &volume)
     QString model(arg.value.str);
 
     close(fd);
-#else
-    QString model(volume);
 #endif
 
     return model;
