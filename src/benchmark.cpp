@@ -329,7 +329,12 @@ void Benchmark::initSession()
     m_helperAuthorized = false;
 
     auto interface = helperInterface();
-    if (interface) handleDbusPendingCall(interface->initSession());
+    if (interface) {
+        // initialise a session in the helper, handing it our PATH env. var
+	   // as it will have been started via DBus and thus is likely to
+	   // have a different PATH that the one the user defined for him/herself.
+        handleDbusPendingCall(interface->initSession(qgetenv("PATH")));
+    }
 
     // Process was not stopped by handleDbusPendingCall, consider that the authorization was successful
     if (isRunning()) m_helperAuthorized = true;

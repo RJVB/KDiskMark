@@ -75,9 +75,9 @@ HelperAdaptor::HelperAdaptor(Helper *parent) :
     m_parentHelper = parent;
 }
 
-QVariantMap HelperAdaptor::initSession()
+QVariantMap HelperAdaptor::initSession(const QString &PATH)
 {
-    return m_parentHelper->initSession();
+    return m_parentHelper->initSession(PATH);
 }
 
 QVariantMap HelperAdaptor::endSession()
@@ -150,14 +150,18 @@ Helper::Helper() : m_helperAdaptor(new HelperAdaptor(this))
             oldHandler = qInstallMessageHandler(theMessageOutput);
             QLoggingCategory::defaultCategory()->setEnabled(QtInfoMsg, true);
             QLoggingCategory::defaultCategory()->setEnabled(QtWarningMsg, true);
+        } else {
+            qWarning() << "Can't open logfile" << logFile->fileName();
         }
+    } else {
+        qWarning() << "Can't create logging facility";
     }
 }
 
-QVariantMap Helper::initSession()
+QVariantMap Helper::initSession(const QString &PATH)
 {
     if (!calledFromDBus()) {
-	   qWarning() << Q_FUNC_INFO << "not called via DBus!";
+        qWarning() << Q_FUNC_INFO << "not called via DBus!";
         return {};
     }
 
@@ -167,6 +171,12 @@ QVariantMap Helper::initSession()
 
     if (!m_serviceWatcher->watchedServices().isEmpty()) {
         return {{"success", false}, {"error", "There are already registered DBus connection."}};
+    }
+
+    if (!PATH.isEmpty()) {
+        // KDiskMark handed us its PATH, set it so that we can find the same `fio`.
+	   // NB: we're started via DBus, so there's no guarantee we get the same PATH!!
+        qputenv("PATH", PATH.toUtf8());
     }
 
 #ifdef USE_PRIVILEGED_HELPER
@@ -258,6 +268,7 @@ QVariantMap Helper::prepareBenchmarkFile(const QString &benchmarkPath, int fileS
     if (!m_benchmarkFile.open()) {
         return {{"success", false}, {"error", QStringLiteral("An error occurred while creating the benchmark file: %1").arg(m_benchmarkFile.errorString())}};
     }
+    m_benchmarkFile.close();
 
     m_process = new QProcess();
     m_process->start("fio", QStringList()
@@ -278,9 +289,14 @@ QVariantMap Helper::prepareBenchmarkFile(const QString &benchmarkPath, int fileS
         emit taskFinished(exitStatus == QProcess::NormalExit, allStdout, allStderr);
     });
 
-    qInfo() << Q_FUNC_INFO << m_process->program() + " " + m_process->arguments().join(" ");
-
-    return {{"success", true}};
+    if (m_process->waitForStarted()) {
+        qInfo() << Q_FUNC_INFO << m_process->program() + " " + m_process->arguments().join(" ");
+        return {{"success", true}};
+    } else {
+        qCritical() << Q_FUNC_INFO << "failed to start:" << m_process->program() + " " + m_process->arguments().join(" ")
+            << "PATH=" << qgetenv("PATH");
+        return {{"success", false}};
+    }
 }
 
 QVariantMap Helper::startBenchmarkTest(int measuringTime, int fileSize, int randomReadPercentage, bool fillZeros, bool cacheBypass, bool continuousGeneration,
@@ -328,7 +344,11 @@ QVariantMap Helper::startBenchmarkTest(int measuringTime, int fileSize, int rand
         emit taskFinished(exitStatus == QProcess::NormalExit, allStdout, allStderr);
     });
 
-    return {{"success", true}};
+    if (m_process->waitForStarted()) {
+        return {{"success", true}};
+    } else {
+        return {{"success", false}};
+    }
 }
 
 QVariantMap Helper::flushPageCache()
@@ -405,6 +425,7 @@ QVariantMap Helper::checkCowStatus(const QString &path)
     switch (fs_info.f_type) {
         case 0x9123683E: // BTRFS_SUPER_MAGIC
         case 0xca451a4e: // BCACHEFS_SUPER_MAGIC
+        // APFS?
             break;
         default:
             return {{"success", true}, {"hasCow", false}};
@@ -419,7 +440,8 @@ QVariantMap Helper::checkCowStatus(const QString &path)
     bool hasCow = false;
     if (ioctl(fd, FS_IOC_GETFLAGS, &flags) >= 0) {
         hasCow = !(flags & FS_NOCOW_FL);
-    } else {
+    } else
+    {
         qWarning() << QStringLiteral("Failed to get FS flags for") << path << QStringLiteral(":") << strerror(errno);
     }
 

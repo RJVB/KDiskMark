@@ -3,8 +3,15 @@
 #include <QApplication>
 #include <QCommandLineParser>
 #include <QStorageInfo>
+#include <QSettings>
 
-// #include "singleapplication.h"
+#ifdef SINGLE_INSTANCE_ONLY
+#include "singleapplication.h"
+using ApplicationClass = SingleApplication;
+#else
+using ApplicationClass = QAPPLICATION_CLASS;
+#endif
+
 #include "cmake.h"
 
 int main(int argc, char *argv[])
@@ -18,7 +25,7 @@ int main(int argc, char *argv[])
     QApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 #endif
 
-    QApplication a(argc, argv);
+    ApplicationClass a(argc, argv);
 
     QCommandLineParser parser;
     parser.setApplicationDescription("Disk benchmark application");

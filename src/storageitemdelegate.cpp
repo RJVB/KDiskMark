@@ -27,6 +27,7 @@ void StorageItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &o
 
         QStyleOptionViewItem opt = option;
         initStyleOption(&opt, index);
+        painter->save();
         opt.text = QString();
         style->drawControl(QStyle::CE_ItemViewItem, &opt, painter, option.widget);
 
@@ -79,6 +80,7 @@ void StorageItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &o
         style->drawControl(QStyle::CE_ProgressBar, &progressBarOption, painter);
 
         painter->drawText(progressBarRect, option.displayAlignment | Qt::AlignRight, QString::number(percent) + "%");
+        painter->restore();
     }
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     else if (index.data(Qt::DecorationRole).typeId() == QVariant::Icon) {
@@ -89,6 +91,7 @@ void StorageItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &o
 
         QStyleOptionViewItem opt = option;
         initStyleOption(&opt, index);
+        painter->save();
         opt.icon = QIcon();
         opt.text = QString();
         style->drawControl(QStyle::CE_ItemViewItem, &opt, painter, option.widget);
@@ -124,6 +127,7 @@ void StorageItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &o
         palette.setColor(QPalette::Text, painter->pen().color());
         opt.palette = palette;
 
+        painter->restore();
         QStyledItemDelegate::paint(painter, opt, index);
     }
     else {

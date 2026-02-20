@@ -64,7 +64,7 @@ void AppSettings::applyLocale(const QLocale &locale)
     if (qtTranslatorLoaded) {
         QCoreApplication::installTranslator(&s_qtTranslator);
     } else {
-        qWarning() << "Failed to load Qt translations for locale" << newLocale;
+        qDebug() << "Failed to load Qt translations for locale" << newLocale;
     }
 }
 

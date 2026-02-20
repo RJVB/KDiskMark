@@ -17,6 +17,7 @@ include(FeatureSummary)
 
 option(USE_QT5 "Use Qt5 instead of Qt6" OFF)
 option(USE_PRIVILEGED_HELPER "The benchmarking helper process runs as root" ON)
+option(SINGLE_INSTANCE_ONLY "Allow only a single instance" OFF)
 
 if(USE_QT5)
     find_package(Qt5 COMPONENTS Widgets LinguistTools DBus REQUIRED)
@@ -59,7 +60,9 @@ set(CPACK_RPM_COMPRESSION_TYPE lzma)
 set(CPACK_NSIS_DISPLAY_NAME ${APPLICATION_NAME})
 
 set(QAPPLICATION_CLASS QApplication)
-add_subdirectory(src/singleapplication)
+if (SINGLE_INSTANCE_ONLY)
+    add_subdirectory(src/singleapplication)
+endif()
 
 find_package(ECM REQUIRED NO_MODULE)
 list(APPEND CMAKE_MODULE_PATH ${ECM_MODULE_PATH})
@@ -150,8 +153,18 @@ if (USE_PRIVILEGED_HELPER)
         APPEND PROPERTY COMPILE_DEFINITIONS USE_PRIVILEGED_HELPER)
 endif()
 
+if (SINGLE_INSTANCE_ONLY)
+    set_property(SOURCE
+        src/main.cpp
+        APPEND PROPERTY COMPILE_DEFINITIONS SINGLE_INSTANCE_ONLY)
+    target_link_libraries(${PROJECT_NAME} PRIVATE
+        SingleApplication::SingleApplication)
+else()
+    set_property(SOURCE
+        src/main.cpp
+        APPEND PROPERTY COMPILE_DEFINITIONS QAPPLICATION_CLASS=${QAPPLICATION_CLASS})
+endif()
 target_link_libraries(${PROJECT_NAME} PRIVATE
-    SingleApplication::SingleApplication
     ${QT_LIBS}
 )
 

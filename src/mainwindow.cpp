@@ -182,7 +182,7 @@ MainWindow::MainWindow(QWidget *parent)
 #else
     ui->actionFlush_Pagecache->setChecked(false);
     ui->actionFlush_Pagecache->setEnabled(false);
-    ui->actionFlush_Pagecache->setToolTip(tr("Only available in builds that require root privileges"));
+    ui->actionFlush_Pagecache->setToolTip(tr("Only available in Linux builds that require root privileges"));
 #endif
     ui->actionCoW_detection->setChecked(settings.getCoWDetectionState());
     ui->loopsCount->setValue(settings.getLoopsCount());
@@ -416,7 +416,7 @@ void MainWindow::updateStoragesList()
 
 void MainWindow::addItemToStoragesList(const Global::Storage &storage)
 {
-    if (ui->comboBox_Storages->findText(storage.path, Qt::MatchContains) != -1)
+    if (ui->comboBox_Storages->findText(storage.path, Qt::MatchFixedString|Qt::MatchCaseSensitive) != -1)
          return;
 
     ui->comboBox_Storages->addItem(
@@ -467,7 +467,6 @@ void MainWindow::resizeComboBoxItemsPopup(QComboBox *combobox)
 #else
         int width = fontMetrics.width(combobox->itemText(i));
 #endif
-
         if (width > maxWidth)
             maxWidth = width;
     }

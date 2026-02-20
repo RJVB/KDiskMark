@@ -18,7 +18,7 @@ public:
     explicit HelperAdaptor(Helper *parent);
 
 public slots:
-    Q_SCRIPTABLE QVariantMap initSession();
+    Q_SCRIPTABLE QVariantMap initSession(const QString &PATH);
     Q_SCRIPTABLE QVariantMap endSession();
     Q_SCRIPTABLE QVariantMap prepareBenchmarkFile(const QString &benchmarkPath, int fileSize, bool fillZeros);
     Q_SCRIPTABLE QVariantMap startBenchmarkTest(
@@ -46,7 +46,7 @@ public:
     Helper();
 
 public:
-    QVariantMap initSession();
+    QVariantMap initSession(const QString &PATH);
     QVariantMap endSession();
     QVariantMap prepareBenchmarkFile(const QString &benchmarkPath, int fileSize, bool fillZeros);
     QVariantMap startBenchmarkTest(int measuringTime, int fileSize,
