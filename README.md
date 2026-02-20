@@ -46,84 +46,26 @@ Profile: Default
 * [CMake](https://cmake.org/) >= 3.12
 * [Extra CMake Modules](https://github.com/KDE/extra-cmake-modules) >= 5.73
 * [Qt](https://www.qt.io/) with Widgets and DBus >= 5.9
-* [PolicyKit](https://gitlab.freedesktop.org/polkit/polkit) Agent
-    * `PolkitQt-1` bindings.
 * [Flexible I/O Tester](https://github.com/axboe/fio) with libaio >= 3.1
     * `libaio` development package.
 
-### External libraries
-* [SingleApplication](https://github.com/itay-grudev/SingleApplication) prevents launch of multiple application instances.
+### Optional external libraries
+* [PolicyKit](https://gitlab.freedesktop.org/polkit/polkit) Agent
+    * `PolkitQt-1` bindings.
+* [SingleApplication](https://github.com/itay-grudev/SingleApplication)
+    * prevents launch of multiple application instances.
 
 ## Installation
-Binaries are available on the [Releases](https://github.com/JonMagon/KDiskMark/releases/latest) page.
-
-### Install from the Flathub repository
-[<img src="https://flathub.org/assets/badges/flathub-badge-i-en.png" height="56">](https://flathub.org/apps/details/io.github.jonmagon.kdiskmark)
-```bash
-flatpak install flathub io.github.jonmagon.kdiskmark
-````
-
-### Install from the Snap Store
-
-> [!WARNING]  
-> Package is no longer maintained. It will remain available on Snap Store but will receive no updates.
-
-[![Get it from the Snap Store](https://snapcraft.io/static/images/badges/en/snap-store-white.svg)](https://snapcraft.io/kdiskmark)
-```bash
-sudo snap install kdiskmark
-sudo snap connect kdiskmark:removable-media # external storages
-````
-
-### Debian / Ubuntu based distros
-
-```bash
-sudo apt update
-sudo apt install kdiskmark
-```
-
-Ubuntu users can also use the PPA:
-```bash
-sudo add-apt-repository ppa:jonmagon/kdiskmark
-sudo apt update
-sudo apt install kdiskmark
-```
-
-### Arch based distros
-
-Available in the [extra](https://www.archlinux.org/packages/extra/x86_64/kdiskmark/) repository:
-```bash
-sudo pacman -Syu kdiskmark
-```
-
-Development version from AUR:
-```bash
-git clone https://aur.archlinux.org/kdiskmark-git.git
-cd kdiskmark-git
-makepkg -si
-```
-
-### Fedora
-
-Available in the [Fedora](https://src.fedoraproject.org/rpms/kdiskmark/) repository:
-```bash
-sudo dnf install kdiskmark
-```
-
-### openSUSE Tumbleweed
-
-Available in the [openSUSE Factory](https://build.opensuse.org/package/show/openSUSE%3AFactory/kdiskmark) repository:
-```bash
-sudo zypper install kdiskmark
-```
+Official, Linux-only binaries are available on the [Releases](https://github.com/JonMagon/KDiskMark/releases/latest) page.
+More [Linux installation options](https://github.com/JonMagon/KDiskMark#installation).
 
 ## Building
-### Building a package using CPack
-You can build **KDiskMark** by using the following commands:
+You can build **KDiskMark** by using the following commands from inside the source directory:
 
 ```bash
 mkdir build && cd build
-cmake -D CMAKE_BUILD_TYPE=Release ..
-cpack -G DEB # Or RPM, ZIP etc.
+cmake -DCMAKE_BUILD_TYPE=Release ..
+make && sudo make install
 ```
 
 ### Building with Qt5
@@ -131,12 +73,12 @@ To build **KDiskMark** with Qt5 instead of the default Qt6, use the `USE_QT5` fl
 
 ```bash
 mkdir build && cd build
-cmake -D CMAKE_BUILD_TYPE=Release -D USE_QT5=ON ..
-cpack -G DEB # Or RPM, ZIP etc.
+cmake -DCMAKE_BUILD_TYPE=Release -D USE_QT5=ON ..
+make && sudo make install
 ```
 
-## Localization [![Crowdin](https://badges.crowdin.net/kdiskmark/localized.svg)](https://crowdin.com/project/kdiskmark)
-To help with localization you can use [Crowdin](https://crowdin.com/project/kdiskmark) or translate files in `data/translations` with [Qt Linguist](https://doc.qt.io/Qt-5/linguist-translators.html) directly. To add a new language, copy `data/translations/kdiskmark.ts` to `data/translations/kdiskmark_<ISO 639-1 language code>_<ISO 3166-1 alpha-2 language code>.ts`, translate it, then add the file to the TS_FILES variable in CMakeLists.txt, and create a pull request. It is also possible to add localized Comment and Keywords sections into `data/kdiskmark.desktop` and message for PolicyKit authorization into `data/dev.jonmagon.kdiskmark.helper.policy`.
+## Localisation [![Crowdin](https://badges.crowdin.net/kdiskmark/localized.svg)](https://crowdin.com/project/kdiskmark)
+To help with localisation you can use [Crowdin](https://crowdin.com/project/kdiskmark) or translate files in `data/translations` with [Qt Linguist](https://doc.qt.io/Qt-5/linguist-translators.html) directly. To add a new language, copy `data/translations/kdiskmark.ts` to `data/translations/kdiskmark_<ISO 639-1 language code>_<ISO 3166-1 alpha-2 language code>.ts`, translate it, then add the file to the TS_FILES variable in CMakeLists.txt, and create a pull request. It is also possible to add localised Comment and Keywords sections into `data/kdiskmark.desktop` and message for PolicyKit authorisation into `data/dev.jonmagon.kdiskmark.helper.policy`.
 
 Languages currently available:
 * Chinese (Simplified)
