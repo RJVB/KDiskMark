@@ -8,6 +8,10 @@
 <p align="center">
    <img src="https://raw.githubusercontent.com/JonMagon/KDiskMark/master/assets/images/kdiskmark.png"/>
 </p>
+<p align="center">
+   <img width="849" height="523" alt="KDiskMark-mac" src="https://github.com/user-attachments/assets/5ddafe5c-9a23-4aaa-aa34-98514dbb8762" />
+   KDiskMark running on Mac OS X 10.9.5 with Qt 5.9.8 and a QtCurve widget theme.
+</p>
 
 ## Features
 * Configurable block size, queues, and threads count for each test
