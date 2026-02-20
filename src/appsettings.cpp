@@ -312,6 +312,19 @@ Global::Theme AppSettings::defaultTheme()
     return Global::Theme::UseFusion;
 }
 
+bool AppSettings::adaptParamsForIOEngine(Global::BenchmarkParams &params) const
+{
+    if (getIOEngineName() == "fio-default") {
+        // this actually stands for "psync", a synchronous mode which
+        // makes fio warn about (but otherwise ignore) multiple queues.
+        // We do this in a separate function rather than in getBenchmarkParams()
+        // to ensure that this remains a pure runtime change.
+        params.Queues = 1;
+        return true;
+    }
+    return false;
+}
+
 Global::BenchmarkParams AppSettings::getBenchmarkParams(Global::BenchmarkTest test, Global::PerformanceProfile profile) const
 {
     Global::BenchmarkParams defaultSet = defaultBenchmarkParams(test, profile, Global::BenchmarkPreset::Standard);
@@ -374,7 +387,11 @@ Global::BenchmarkParams AppSettings::defaultBenchmarkParams(Global::BenchmarkTes
                 return { Global::BenchmarkIOPattern::RND,    4, 32,  1 };
                 else
                 return { Global::BenchmarkIOPattern::RND,    4, 32, 16 };
+            default:
+                // dear compiler, there's nothing more to handle here
+                break;
             }
+            break;
         case Global::PerformanceProfile::RealWorld:
             switch (test)
             {
@@ -382,13 +399,21 @@ Global::BenchmarkParams AppSettings::defaultBenchmarkParams(Global::BenchmarkTes
                 return { Global::BenchmarkIOPattern::SEQ, 1024,  1,  1 };
             case Global::BenchmarkTest::Test_2:
                 return { Global::BenchmarkIOPattern::RND,    4,  1,  1 };
+            default:
+                // dear compiler, there's nothing more to handle here
+                break;
             }
+            break;
         case Global::PerformanceProfile::Demo:
             switch (test)
             {
             case Global::BenchmarkTest::Test_1:
                 return { Global::BenchmarkIOPattern::SEQ, 1024,  8,  1 };
+            default:
+                // dear compiler, there's nothing more to handle here
+                break;
             }
+            break;
     }
     Q_UNREACHABLE();
 }

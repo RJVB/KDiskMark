@@ -148,7 +148,17 @@ void Benchmark::sendResult(const Benchmark::PerformanceResult &result, const int
 
 Benchmark::ParsedJob Benchmark::parseResult(const QString &output, const QString &errorOutput)
 {
-    QJsonDocument jsonResponse = QJsonDocument::fromJson(output.toUtf8());
+    QByteArray json = output.toUtf8();
+    if (output.startsWith("note: ", Qt::CaseInsensitive)) {
+        // fio left us a note, and did that ahead of the json output...
+        const auto jStart = output.indexOf("\n{\n");
+        json = output.mid(jStart).toUtf8();
+        qWarning() << "Additional output from fio:\n" <<  output.left(jStart);
+        emit benchmarkNote(output.left(jStart));
+    } else {
+        emit benchmarkNote(QString());
+    }
+    QJsonDocument jsonResponse = QJsonDocument::fromJson(json);
     QJsonObject jsonObject = jsonResponse.object();
     QJsonArray jobs = jsonObject["jobs"].toArray();
 
@@ -253,6 +263,9 @@ void Benchmark::runBenchmark(QList<QPair<QPair<Global::BenchmarkTest, Global::Be
         m_progressBars = item.second;
 
         Global::BenchmarkParams params = settings.getBenchmarkParams(item.first.first, settings.getPerformanceProfile());
+        if (settings.adaptParamsForIOEngine(params)) {
+            qDebug() << Q_FUNC_INFO << "The benchmark parameters were adapted for the chosen I/O engine!";
+        }
 
         switch (item.first.second)
         {

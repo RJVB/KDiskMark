@@ -100,6 +100,7 @@ private:
 
 signals:
     void benchmarkStatusUpdate(const QString &name);
+    void benchmarkNote(const QString &note);
     void resultReady(QProgressBar *progressBar, const Benchmark::PerformanceResult &result);
     void failed(const QString &error);
     void finished();

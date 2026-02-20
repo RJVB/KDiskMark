@@ -31,6 +31,7 @@ public:
     void setMixedState(bool mixedState);
     static bool defaultMixedState();
 
+    bool adaptParamsForIOEngine(Global::BenchmarkParams &params) const;
     Global::BenchmarkParams getBenchmarkParams(Global::BenchmarkTest test, Global::PerformanceProfile profile = Global::PerformanceProfile::Default) const;
     void setBenchmarkParams(Global::BenchmarkTest test, Global::PerformanceProfile profile, Global::BenchmarkParams params);
     static Global::BenchmarkParams defaultBenchmarkParams(Global::BenchmarkTest test, Global::PerformanceProfile profile, Global::BenchmarkPreset preset);

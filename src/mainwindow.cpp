@@ -61,6 +61,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->extraIcon->setToolTip(tr("The device is encrypted. Performance may drop."));
     ui->extraIcon->setVisible(false);
 
+    statusBar()->setSizeGripEnabled(false);
     statusBar()->hide();
 
     ui->loopsCount->findChild<QLineEdit*>()->setReadOnly(true);
@@ -248,6 +249,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(engineGroup, &QActionGroup::triggered, this, [=](QAction *act) {
         AppSettings settings;
         settings.setIOEngineName(act->text());
+        // the engine selected can have an implication on the number of queues we can use
+        updateBenchmarkButtonsContent();
     });
     // this will set the default IOEngine in the settings without
     // having to duplicate any platform-specific code.
@@ -265,6 +268,7 @@ MainWindow::MainWindow(QWidget *parent)
     // Set callbacks
     connect(m_benchmark, &Benchmark::runningStateChanged, this, &MainWindow::benchmarkStateChanged);
     connect(m_benchmark, &Benchmark::benchmarkStatusUpdate, this, &MainWindow::benchmarkStatusUpdate);
+    connect(m_benchmark, &Benchmark::benchmarkNote, this, &MainWindow::benchmarkNote);
     connect(m_benchmark, &Benchmark::resultReady, this, &MainWindow::handleResults);
     connect(m_benchmark, &Benchmark::failed, this, &MainWindow::benchmarkFailed);
     connect(m_benchmark, &Benchmark::cowCheckRequired, this, &MainWindow::handleCowCheck);
@@ -510,6 +514,7 @@ void MainWindow::updateBenchmarkButtonsContent()
     Global::BenchmarkParams params;
 
     params = settings.getBenchmarkParams(Global::BenchmarkTest::Test_1, settings.getPerformanceProfile());
+    settings.adaptParamsForIOEngine(params);
     ui->pushButton_Test_1->setText(Global::getBenchmarkButtonText(params));
 
     switch (settings.getPerformanceProfile())
@@ -518,14 +523,17 @@ void MainWindow::updateBenchmarkButtonsContent()
         ui->pushButton_Test_1->setToolTip(Global::getBenchmarkButtonToolTip(params));
 
         params = settings.getBenchmarkParams(Global::BenchmarkTest::Test_2);
+        settings.adaptParamsForIOEngine(params);
         ui->pushButton_Test_2->setText(Global::getBenchmarkButtonText(params));
         ui->pushButton_Test_2->setToolTip(Global::getBenchmarkButtonToolTip(params));
 
         params = settings.getBenchmarkParams(Global::BenchmarkTest::Test_3);
+        settings.adaptParamsForIOEngine(params);
         ui->pushButton_Test_3->setText(Global::getBenchmarkButtonText(params));
         ui->pushButton_Test_3->setToolTip(Global::getBenchmarkButtonToolTip(params));
 
         params = settings.getBenchmarkParams(Global::BenchmarkTest::Test_4);
+        settings.adaptParamsForIOEngine(params);
         ui->pushButton_Test_4->setText(Global::getBenchmarkButtonText(params));
         ui->pushButton_Test_4->setToolTip(Global::getBenchmarkButtonToolTip(params));
         break;
@@ -534,6 +542,7 @@ void MainWindow::updateBenchmarkButtonsContent()
         ui->pushButton_Test_1->setToolTip(Global::getBenchmarkButtonToolTip(params, true).arg(tr("MB/s")));
 
         params = settings.getBenchmarkParams(Global::BenchmarkTest::Test_2, settings.getPerformanceProfile());
+        settings.adaptParamsForIOEngine(params);
         ui->pushButton_Test_2->setText(Global::getBenchmarkButtonText(params));
         ui->pushButton_Test_2->setToolTip(Global::getBenchmarkButtonToolTip(params, true).arg(tr("MB/s")));
 
@@ -657,13 +666,16 @@ void MainWindow::updateLabels()
 QString MainWindow::combineOutputTestResult(const QProgressBar *progressBar, const Global::BenchmarkParams &params)
 {
     QMetaEnum metaEnum = QMetaEnum::fromType<Global::ComparisonUnit>();
+    const AppSettings settings;
+    Global::BenchmarkParams prms = params;
+    settings.adaptParamsForIOEngine(prms);
 
     return QStringLiteral("%1 %2 %3 (Q=%4, T=%5): %6 MB/s [ %7 IOPS] < %8 us>")
-           .arg(params.Pattern == Global::BenchmarkIOPattern::SEQ ? "Sequential" : "Random")
-           .arg(QString::number(params.BlockSize >= 1024 ? params.BlockSize / 1024 : params.BlockSize).rightJustified(3, ' '))
-           .arg(params.BlockSize >= 1024 ? "MiB" : "KiB")
-           .arg(QString::number(params.Queues).rightJustified(3, ' '))
-           .arg(QString::number(params.Threads).rightJustified(2, ' '))
+           .arg(prms.Pattern == Global::BenchmarkIOPattern::SEQ ? "Sequential" : "Random")
+           .arg(QString::number(prms.BlockSize >= 1024 ? prms.BlockSize / 1024 : prms.BlockSize).rightJustified(3, ' '))
+           .arg(prms.BlockSize >= 1024 ? "MiB" : "KiB")
+           .arg(QString::number(prms.Queues).rightJustified(3, ' '))
+           .arg(QString::number(prms.Threads).rightJustified(2, ' '))
            .arg(QString::number(
                     progressBar->property(metaEnum.valueToKey(Global::ComparisonUnit::MBPerSec)).toFloat(), 'f', 3)
                 .rightJustified(9, ' '))
@@ -1078,6 +1090,18 @@ void MainWindow::benchmarkStatusUpdate(const QString &name)
     }
 }
 
+void MainWindow::benchmarkNote(const QString &note)
+{
+    if (!note.isEmpty()) {
+        ui->statusbar->show();
+        ui->statusbar->setVisible(true);
+        ui->statusbar->showMessage(note);
+    } else {
+        ui->statusbar->clearMessage();
+        ui->statusbar->hide();
+    }
+}
+
 void MainWindow::handleResults(QProgressBar *progressBar, const Benchmark::PerformanceResult &result)
 {
     QMetaEnum metaEnum = QMetaEnum::fromType<Global::ComparisonUnit>();
@@ -1214,6 +1238,7 @@ bool MainWindow::runCombinedRandomTest()
             { { Global::Test_2, Global::Mix   }, {  ui->mixBar_2,  ui->mixBar_3,   ui->mixBar_4   } };
         }
 
+        statusBar()->hide();
         m_benchmark->runBenchmark(set);
 
         return true;
@@ -1235,6 +1260,7 @@ void MainWindow::on_pushButton_Test_1_clicked()
             { { Global::Test_1, Global::Mix   }, { ui->mixBar_1   } };
         }
 
+        statusBar()->hide();
         m_benchmark->runBenchmark(set);
     });
 }
@@ -1254,6 +1280,7 @@ void MainWindow::on_pushButton_Test_2_clicked()
             { { Global::Test_2, Global::Mix   }, { ui->mixBar_2   } };
         }
 
+        statusBar()->hide();
         m_benchmark->runBenchmark(set);
     });
 }
@@ -1273,6 +1300,7 @@ void MainWindow::on_pushButton_Test_3_clicked()
             { { Global::Test_3, Global::Mix   }, { ui->mixBar_3   } };
         }
 
+        statusBar()->hide();
         m_benchmark->runBenchmark(set);
     });
 }
@@ -1292,6 +1320,7 @@ void MainWindow::on_pushButton_Test_4_clicked()
             { { Global::Test_4, Global::Mix   }, { ui->mixBar_4   } };
         }
 
+        statusBar()->hide();
         m_benchmark->runBenchmark(set);
     });
 }
@@ -1346,6 +1375,7 @@ void MainWindow::on_pushButton_All_clicked()
             }
         }
 
+        statusBar()->hide();
         m_benchmark->runBenchmark(set);
     });
 }
