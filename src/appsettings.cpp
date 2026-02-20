@@ -47,24 +47,32 @@ void AppSettings::applyLocale(const QLocale &locale)
     QCoreApplication::removeTranslator(&s_qtTranslator);
 
     if (newLocale.language() != QLocale::English) {
-        bool appTranslatorLoaded = s_appTranslator.load(newLocale, QStringLiteral(PROJECT_NAME), QStringLiteral("_"), QStandardPaths::locate(QStandardPaths::AppDataLocation, QStringLiteral("translations"), QStandardPaths::LocateDirectory));
+#ifdef __APPLE__
+        const auto translationsLocation = QCoreApplication::applicationDirPath() + QStringLiteral("/../Resources/translations/");
+#else
+        const auto translationsLocation = QStandardPaths::locate(QStandardPaths::AppDataLocation, QStringLiteral("translations"), QStandardPaths::LocateDirectory);
+#endif
+        bool appTranslatorLoaded = s_appTranslator.load(newLocale, QStringLiteral(PROJECT_NAME), QStringLiteral("_"), translationsLocation);
         if (appTranslatorLoaded) {
             QCoreApplication::installTranslator(&s_appTranslator);
         } else {
-            qWarning() << "Failed to load application translations for locale" << newLocale;
+            qWarning() << "Failed to load application translations for locale" << newLocale << "from" << translationsLocation;
+            qWarning() << "\t" << QStandardPaths::locateAll(QStandardPaths::AppDataLocation, QStringLiteral("translations"), QStandardPaths::LocateDirectory);;
         }
     }
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-    bool qtTranslatorLoaded = s_qtTranslator.load(newLocale, QStringLiteral("qt"), QStringLiteral("_"), QLibraryInfo::path(QLibraryInfo::TranslationsPath));
+    const auto translationsLocation = QLibraryInfo::path(QLibraryInfo::TranslationsPath);
+    bool qtTranslatorLoaded = s_qtTranslator.load(newLocale, QStringLiteral("qt"), QStringLiteral("_"), translationsLocation);
 #else
-    bool qtTranslatorLoaded = s_qtTranslator.load(newLocale, QStringLiteral("qt"), QStringLiteral("_"), QLibraryInfo::location(QLibraryInfo::TranslationsPath));
+    const auto translationsLocation = QLibraryInfo::location(QLibraryInfo::TranslationsPath);
+    bool qtTranslatorLoaded = s_qtTranslator.load(newLocale, QStringLiteral("qt"), QStringLiteral("_"), translationsLocation);
 #endif
 
     if (qtTranslatorLoaded) {
         QCoreApplication::installTranslator(&s_qtTranslator);
     } else {
-        qDebug() << "Failed to load Qt translations for locale" << newLocale;
+        qDebug() << "Failed to load Qt translations for locale" << newLocale << "from" << translationsLocation;
     }
 }
 

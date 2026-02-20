@@ -13,10 +13,16 @@
 #include <signal.h>
 
 #include <sys/ioctl.h>
+#ifdef __linux__
 #include <sys/statfs.h>
 #include <linux/fs.h>
+#elif defined(__APPLE__)
+#include <sys/param.h>
+#include <sys/mount.h>
+#endif
 #include <fcntl.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include <QLoggingCategory>
 #include <syslog.h>
@@ -361,6 +367,7 @@ QVariantMap Helper::flushPageCache()
         return {{"success", false}, {"error", "A benchmark file must first be created."}};
     }
 
+#ifdef __linux__
     QFile file("/proc/sys/vm/drop_caches");
 
     if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
@@ -372,6 +379,9 @@ QVariantMap Helper::flushPageCache()
     }
 
     return {{"success", true}};
+#else
+    return {{"success", false}};
+#endif
 }
 
 QVariantMap Helper::removeBenchmarkFile()
@@ -438,9 +448,11 @@ QVariantMap Helper::checkCowStatus(const QString &path)
 
     unsigned long flags = 0;
     bool hasCow = false;
+#ifdef __linux__
     if (ioctl(fd, FS_IOC_GETFLAGS, &flags) >= 0) {
         hasCow = !(flags & FS_NOCOW_FL);
     } else
+#endif
     {
         qWarning() << QStringLiteral("Failed to get FS flags for") << path << QStringLiteral(":") << strerror(errno);
     }
@@ -472,6 +484,7 @@ QVariantMap Helper::createNoCowDirectory(const QString &path)
     }
 
     unsigned long flags = 0;
+#ifdef __linux__
     if (ioctl(fd, FS_IOC_GETFLAGS, &flags) < 0) {
         close(fd);
         return {{"success", false}, {"error", QStringLiteral("Cannot get flags: %1").arg(strerror(errno))}};
@@ -479,6 +492,9 @@ QVariantMap Helper::createNoCowDirectory(const QString &path)
 
     flags |= FS_NOCOW_FL;
     bool success = (ioctl(fd, FS_IOC_SETFLAGS, &flags) >= 0);
+#else
+    bool success = false;
+#endif
     close(fd);
 
     if (!success) {

@@ -184,7 +184,13 @@ MainWindow::MainWindow(QWidget *parent)
     ui->actionFlush_Pagecache->setEnabled(false);
     ui->actionFlush_Pagecache->setToolTip(tr("Only available in Linux builds that require root privileges"));
 #endif
+#ifdef __linux__
     ui->actionCoW_detection->setChecked(settings.getCoWDetectionState());
+#else
+    // disable control over the feature for now.
+    ui->actionCoW_detection->setChecked(false);
+    ui->actionCoW_detection->setEnabled(false);
+#endif
     ui->loopsCount->setValue(settings.getLoopsCount());
 
     ui->actionTheme_Stylesheet_Light->setChecked(settings.getTheme() == Global::Theme::StyleSheetLight);

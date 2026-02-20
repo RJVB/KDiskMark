@@ -20,6 +20,11 @@ int main(int argc, char *argv[])
     QCoreApplication::setApplicationVersion(QStringLiteral("%1.%2.%3").arg(PROJECT_VERSION_MAJOR)
                                             .arg(PROJECT_VERSION_MINOR).arg(PROJECT_VERSION_PATCH));
     QCoreApplication::setOrganizationName(QStringLiteral(PROJECT_NAME));
+#if defined(__APPLE__)
+    // RJVB's prefs for cross-platform operability:
+    QSettings::setDefaultFormat(QSettings::IniFormat);
+//     QCoreApplication::setOrganizationDomain(QStringLiteral("jonmagon.dev"));
+#endif
 
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     QApplication::setAttribute(Qt::AA_EnableHighDpiScaling);

@@ -16,7 +16,11 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 include(FeatureSummary)
 
 option(USE_QT5 "Use Qt5 instead of Qt6" OFF)
-option(USE_PRIVILEGED_HELPER "The benchmarking helper process runs as root" ON)
+if (NOT APPLE)
+    option(USE_PRIVILEGED_HELPER "The benchmarking helper process runs as root" ON)
+else()
+    option(USE_PRIVILEGED_HELPER "The benchmarking helper process runs as root" OFF)
+endif()
 option(SINGLE_INSTANCE_ONLY "Allow only a single instance" OFF)
 
 if(USE_QT5)
@@ -67,11 +71,18 @@ endif()
 find_package(ECM REQUIRED NO_MODULE)
 list(APPEND CMAKE_MODULE_PATH ${ECM_MODULE_PATH})
 
+if (NOT BUNDLE_INSTALL_DIR)
+    set(BUNDLE_INSTALL_DIR "/Applications")
+endif()
 include(CPack)
 include(GNUInstallDirs)
 include(ECMInstallIcons)
 include(ECMConfiguredInstall)
+include(ECMAddAppIcon)
+include(ECMMarkNonGuiExecutable)
 include(KDEInstallDirs)
+# this will take care of generating an AppBundle on Mac:
+include(KDECMakeSettings)
 
 set(helper_interface_xml dev.jonmagon.kdiskmark.helperinterface.xml)
 
@@ -179,8 +190,30 @@ set(APP_ICONS
     data/icons/512-apps-kdiskmark.png
 )
 
-install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_BINDIR})
-install(FILES ${QM_FILES} DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/${PROJECT_NAME}/${PROJECT_NAME}/translations)
+ecm_add_app_icon(${PROJECT_NAME} ICONS ${APP_ICONS})
+
+if (APPLE)
+    # the MacOSX bundle display name property (CFBundleDisplayName) is not currently supported by cmake,
+    # so has to be set for all targets in this cmake file
+    set(MACOSX_BUNDLE_DISPLAY_NAME KDiskMark)
+    # We provide our own Info.plist to disable AppNap for KDiskMark:
+    set_target_properties(${PROJECT_NAME} PROPERTIES MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/data/Info.plist.in
+        MACOSX_BUNDLE_GUI_IDENTIFIER "dev.jonmagon.KDiskMark"
+        MACOSX_BUNDLE_BUNDLE_NAME "KDiskMark"
+        MACOSX_BUNDLE_DISPLAY_NAME "KDiskMark"
+        MACOSX_BUNDLE_INFO_STRING "An HDD and SSD benchmark tool with a very friendly graphical user interface"
+        MACOSX_BUNDLE_LONG_VERSION_STRING "KDiskMark ${PROJECT_VERSION}"
+        MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}"
+        MACOSX_BUNDLE_BUNDLE_VERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}"
+        MACOSX_BUNDLE_ICON_FILE "kdiskmark.icns"
+        MACOSX_BUNDLE_COPYRIGHT "Dmitry Sidorov")
+    set_source_files_properties(${QM_FILES} PROPERTIES 
+        MACOSX_PACKAGE_LOCATION "Resources/translations")
+    install(TARGETS ${PROJECT_NAME} BUNDLE DESTINATION ${BUNDLE_INSTALL_DIR})
+else()
+    install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_BINDIR})
+    install(FILES ${QM_FILES} DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/${PROJECT_NAME}/${PROJECT_NAME}/translations)
+endif()
 install(FILES data/${DESKTOP_FILE} DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/applications)
 
 ecm_install_icons(ICONS ${APP_ICONS} DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons)
@@ -190,6 +223,7 @@ add_executable(${PROJECT_NAME}_helper
     src/helper.cpp
     src/helper.h
 )
+ecm_mark_nongui_executable(${PROJECT_NAME}_helper)
 
 target_link_libraries(${PROJECT_NAME}_helper
     ${QT_LIBS}
