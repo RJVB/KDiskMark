@@ -11,6 +11,12 @@
 
 #include <QDebug>
 
+#ifdef __APPLE__
+// for sysctl
+#include <sys/types.h>
+#include <sys/sysctl.h>
+#endif
+
 QTranslator AppSettings::s_appTranslator;
 QTranslator AppSettings::s_qtTranslator;
 
@@ -319,9 +325,29 @@ bool AppSettings::adaptParamsForIOEngine(Global::BenchmarkParams &params) const
         // makes fio warn about (but otherwise ignore) multiple queues.
         // We do this in a separate function rather than in getBenchmarkParams()
         // to ensure that this remains a pure runtime change.
-        params.Queues = 1;
-        return true;
+        if (params.Queues > 1) {
+            qDebug() << Q_FUNC_INFO << "Using" << getIOEngineName() << "=> capping Queues=" << params.Queues << "to 1";
+            params.Queues = 1;
+            return true;
+        }
     }
+#ifdef __APPLE__
+    if (getIOEngineName() == "posixaio") {
+        uint32_t aioprocmax = 0;
+        size_t len = sizeof(aioprocmax);
+        int sysret = sysctlbyname("kern.aioprocmax", &aioprocmax, &len, nullptr, 0);
+        // fio's iodepth should not exceed kern.aioprocmax, at least for smaller blocksizes.
+        // For larger ones there is a margin (of approx. Queues=BlockSize/8 it seems), probably
+        // before the iodepth no longer translates directly to a "number of concurrently open AIO queues".
+        if (params.BlockSize < 256
+                && sysret == 0 && aioprocmax > 0
+                && params.Queues > aioprocmax) {
+            qDebug() << Q_FUNC_INFO << "Using" << getIOEngineName() << "on Mac => capping Queues=" << params.Queues << "to 1";
+            params.Queues = aioprocmax;
+            return true;
+        }
+    }
+#endif
     return false;
 }
 

@@ -512,45 +512,67 @@ void MainWindow::updateBenchmarkButtonsContent()
     const AppSettings settings;
 
     Global::BenchmarkParams params;
+    // highlight the button text to draw user attention, e.g. to the
+    // fact that test parameters may not be as expected.
+    auto markButton = [](QPushButton *button, bool highlight) {
+        auto font = button->font();
+        if ((highlight && !font.bold()) || (!highlight && font.bold())) {
+            font.setBold(highlight);
+            button->setFont(font);
+        }
+        if (highlight) {
+            button->setToolTip(button->toolTip()
+                + QStringLiteral("\nTest parameters adapted to the I/O engine in use!"));
+        }
+    };
 
     params = settings.getBenchmarkParams(Global::BenchmarkTest::Test_1, settings.getPerformanceProfile());
-    settings.adaptParamsForIOEngine(params);
+    auto needsHighlight = settings.adaptParamsForIOEngine(params);
     ui->pushButton_Test_1->setText(Global::getBenchmarkButtonText(params));
 
     switch (settings.getPerformanceProfile())
     {
     case Global::PerformanceProfile::Default:
         ui->pushButton_Test_1->setToolTip(Global::getBenchmarkButtonToolTip(params));
+        markButton(ui->pushButton_Test_1, needsHighlight);
 
         params = settings.getBenchmarkParams(Global::BenchmarkTest::Test_2);
-        settings.adaptParamsForIOEngine(params);
+        needsHighlight = settings.adaptParamsForIOEngine(params);
         ui->pushButton_Test_2->setText(Global::getBenchmarkButtonText(params));
         ui->pushButton_Test_2->setToolTip(Global::getBenchmarkButtonToolTip(params));
+        markButton(ui->pushButton_Test_2, needsHighlight);
 
         params = settings.getBenchmarkParams(Global::BenchmarkTest::Test_3);
-        settings.adaptParamsForIOEngine(params);
+        needsHighlight = settings.adaptParamsForIOEngine(params);
         ui->pushButton_Test_3->setText(Global::getBenchmarkButtonText(params));
         ui->pushButton_Test_3->setToolTip(Global::getBenchmarkButtonToolTip(params));
+        markButton(ui->pushButton_Test_3, needsHighlight);
 
         params = settings.getBenchmarkParams(Global::BenchmarkTest::Test_4);
-        settings.adaptParamsForIOEngine(params);
+        needsHighlight = settings.adaptParamsForIOEngine(params);
         ui->pushButton_Test_4->setText(Global::getBenchmarkButtonText(params));
         ui->pushButton_Test_4->setToolTip(Global::getBenchmarkButtonToolTip(params));
+        markButton(ui->pushButton_Test_4, needsHighlight);
         break;
     case Global::PerformanceProfile::Peak:
     case Global::PerformanceProfile::RealWorld:
         ui->pushButton_Test_1->setToolTip(Global::getBenchmarkButtonToolTip(params, true).arg(tr("MB/s")));
+        markButton(ui->pushButton_Test_1, needsHighlight);
 
         params = settings.getBenchmarkParams(Global::BenchmarkTest::Test_2, settings.getPerformanceProfile());
-        settings.adaptParamsForIOEngine(params);
+        needsHighlight = settings.adaptParamsForIOEngine(params);
+
         ui->pushButton_Test_2->setText(Global::getBenchmarkButtonText(params));
         ui->pushButton_Test_2->setToolTip(Global::getBenchmarkButtonToolTip(params, true).arg(tr("MB/s")));
+        markButton(ui->pushButton_Test_2, needsHighlight);
 
         ui->pushButton_Test_3->setText(Global::getBenchmarkButtonText(params, tr("IOPS")));
         ui->pushButton_Test_3->setToolTip(Global::getBenchmarkButtonToolTip(params, true).arg(tr("IOPS")));
+        markButton(ui->pushButton_Test_3, needsHighlight);
 
         ui->pushButton_Test_4->setText(Global::getBenchmarkButtonText(params, tr("μs")));
         ui->pushButton_Test_4->setToolTip(Global::getBenchmarkButtonToolTip(params, true).arg(tr("μs")));
+        markButton(ui->pushButton_Test_4, needsHighlight);
         break;
     case Global::PerformanceProfile::Demo:
         ui->label_Demo->setText(QStringLiteral("%1 %2 %3, Q=%4, T=%5")
