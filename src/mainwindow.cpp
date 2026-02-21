@@ -790,9 +790,10 @@ void MainWindow::on_actionCopy_triggered()
 
 void MainWindow::on_actionSave_triggered()
 {
+    static QString dir = QStringLiteral("");
     QString fileName =
             QFileDialog::getSaveFileName(this, QString(),
-                                         QStringLiteral("KDM_%1%2.txt").arg(QDate::currentDate().toString("yyyyMMdd"))
+                                         dir + QStringLiteral("KDM_%1%2.txt").arg(QDate::currentDate().toString("yyyyMMdd"))
                                          .arg(QTime::currentTime().toString("hhmmss")));
     if (!fileName.isEmpty()) {
         QFile file(fileName);
@@ -801,6 +802,7 @@ void MainWindow::on_actionSave_triggered()
             out << getTextBenchmarkResult();
             file.close();
         }
+        dir = QFileInfo(fileName).canonicalPath() + "/";
     }
 }
 
