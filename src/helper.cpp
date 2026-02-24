@@ -336,7 +336,8 @@ QVariantMap Helper::startBenchmarkTest(int measuringTime, int fileSize, int rand
                      << QStringLiteral("--runtime=%1").arg(measuringTime)
                      << QStringLiteral("--rw=%1").arg(rw)
                      << QStringLiteral("--iodepth=%1").arg(queueDepth)
-                     << QStringLiteral("--numjobs=%1").arg(threads));
+                     << QStringLiteral("--numjobs=%1").arg(threads)
+                     << QStringLiteral("--group_reporting"));
 
     connect(m_process, static_cast<void(QProcess::*)(int, QProcess::ExitStatus)>(&QProcess::finished),
             [=] (int exitCode, QProcess::ExitStatus exitStatus) {
