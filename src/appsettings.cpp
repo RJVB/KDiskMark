@@ -326,8 +326,18 @@ bool AppSettings::adaptParamsForIOEngine(Global::BenchmarkParams &params) const
         // We do this in a separate function rather than in getBenchmarkParams()
         // to ensure that this remains a pure runtime change.
         if (params.Queues > 1) {
-            qDebug() << Q_FUNC_INFO << "Using" << getIOEngineName() << "=> capping Queues=" << params.Queues << "to 1";
+            long newThreads = params.Threads * params.Queues;
+#ifdef __APPLE__
+            if (newThreads > 8) {
+                // --numjobs=9 or higher is likely to give an error
+                // "failed to setup shm segment" from fio.
+                newThreads = 8;
+            }
+#endif
+            qDebug() << Q_FUNC_INFO << "Using" << getIOEngineName() << "=> capping Queues=" << params.Queues << "to 1"
+                << "and setting Threads=" << params.Threads << "to" << newThreads;
             params.Queues = 1;
+            params.Threads = newThreads;
             return true;
         }
     }
@@ -339,9 +349,17 @@ bool AppSettings::adaptParamsForIOEngine(Global::BenchmarkParams &params) const
         // fio's iodepth should not exceed kern.aioprocmaxl; the kernel won't give you more
         // and it'll log complaints about it, a LOT for older OS version.
         if (sysret == 0 && aioprocmax > 0 && params.Queues > aioprocmax) {
+            long newThreads = std::lround((double)params.Queues / (double) aioprocmax);
+            if (newThreads > 8) {
+                // --numjobs=9 or higher is likely to give an error
+                // "failed to setup shm segment" from fio.
+                newThreads = 8;
+            }
             qDebug() << Q_FUNC_INFO << "Using" << getIOEngineName() << "on Mac => capping Queues="
-                << params.Queues << "to" << aioprocmax;
+                << params.Queues << "to" << aioprocmax
+                << "and setting Threads=" << params.Threads << "to" << newThreads;
             params.Queues = aioprocmax;
+            params.Threads = newThreads;
             return true;
         }
     }
