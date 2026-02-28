@@ -14,9 +14,16 @@
 </p>
 
 ## Features
-* Configurable block size, queues, and threads count for each test
+* Configurable block size, queues, and threads (jobs/processes!) count for each test
+* Multiple I/O engines supported, including both high-performance asynchronous ones used
+  only by select applications and more common synchronous ones that might give a better
+  idea of a drive's everyday performance.
 * Many languages support
 * Report generation
+
+Note that the synchronous I/O engines do not support having multiple queues in direct I/O submit mode, but do so in "offload mode" (see `man fio`). In direct mode tests with multiple queues are thus adapted; a QiTj test will become Q1Ti*j if possible.
+
+Also note that there is a kernel limit on Mac to the number of queues that is possible with the `posixaio` engine (16), and that it appears to be impossible to use more than 8 threads/jobs.
 
 ## Report Example
 ```
