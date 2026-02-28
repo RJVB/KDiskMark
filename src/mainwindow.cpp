@@ -243,13 +243,31 @@ MainWindow::MainWindow(QWidget *parent)
         defaultIOAction = ioAction;
     }
 #endif
-    ioAction = ui->menuIOEngines->addAction("fio-default");
+    ioAction = ui->menuIOEngines->addAction("vsync (direct mode)");
     ioAction->setActionGroup(engineGroup);
     ioAction->setCheckable(true);
-    ioAction->setWhatsThis("Let fio use its default ioengine");
+    ioAction->setWhatsThis("Basic readv()/writev() engine with io_submit_mode=direct;\n"
+        "IO depth achieved via jobs (processes)");
+    ioAction = ui->menuIOEngines->addAction("vsync (offload mode)");
+    ioAction->setActionGroup(engineGroup);
+    ioAction->setCheckable(true);
+    ioAction->setWhatsThis("Basic readv()/writev() engine with io_submit_mode=offload;\n"
+        "IO depth achieved via multithreading");
+    // ###
+    ioAction = ui->menuIOEngines->addAction("fio-default (direct mode)");
+    ioAction->setActionGroup(engineGroup);
+    ioAction->setCheckable(true);
+    ioAction->setWhatsThis("Let fio use its default ioengine with io_submit_mode=direct;\n"
+        "IO depth achieved via jobs (processes)");
     if (!defaultIOAction) {
         defaultIOAction = ioAction;
     }
+    ioAction = ui->menuIOEngines->addAction("fio-default (offload mode)");
+    ioAction->setActionGroup(engineGroup);
+    ioAction->setCheckable(true);
+    ioAction->setWhatsThis("Let fio use its default ioengine with io_submit_mode=offload;\n"
+        "IO depth achieved via multithreading");
+
     // restore the previous setting
     if (!settings.getIOEngineName().isEmpty()) {
         const auto actions = engineGroup->actions();
@@ -785,7 +803,7 @@ QString MainWindow::getTextBenchmarkResult()
     QString profiles[] = { "Default", "Peak Performance", "Real World Performance", "Demo" };
 
     auto ioengine = settings.getIOEngineName();
-    if (ioengine != "fio-default") {
+    if (!ioengine.startsWith("fio-default")) {
         ioengine = QStringLiteral("fio-") + ioengine;
     }
     output << QString()

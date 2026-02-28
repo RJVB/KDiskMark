@@ -317,8 +317,11 @@ QVariantMap Helper::startBenchmarkTest(int measuringTime, int fileSize, int rand
     }
 
     QStringList arguments = {QStringLiteral("--output-format=json")};
-    if (engine != "fio-default") {
-        arguments << QStringLiteral("--ioengine=") + engine;
+    if (!engine.startsWith("fio-default")) {
+        arguments << QStringLiteral("--ioengine=") + engine.split(QStringLiteral(" ")).at(0);
+    }
+    if (engine.contains("(offload mode)")) {
+        arguments << QStringLiteral("--io_submit_mode=offload");
     }
 
     m_process = new QProcess();

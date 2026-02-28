@@ -224,12 +224,27 @@ int AppSettings::defaultRandomReadPercentage()
 
 QString AppSettings::getIOEngineName() const
 {
-    return m_settings->value(QStringLiteral("Benchmark/IOEngine"), QStringLiteral("")).toString();
+    const auto eng = m_settings->value(QStringLiteral("Benchmark/IOEngine"), QStringLiteral("")).toString();
+    if (eng == "fio-default") {
+        // migrate from the earlier implementation
+        return QStringLiteral("fio-default (direct mode)");
+    }
+    return eng;
 }
 
 void AppSettings::setIOEngineName(const QString &engineName)
 {
     m_settings->setValue(QStringLiteral("Benchmark/IOEngine"), engineName);
+}
+
+bool AppSettings::isSyncIOEngine() const
+{
+    const auto eng = getIOEngineName();
+    // NB: keep this up-to-date!
+    if (eng.startsWith("fio-default") || eng == "vsync") {
+        return true;
+    }
+    return false;
 }
 
 bool AppSettings::getCacheBypassState() const
@@ -320,7 +335,8 @@ Global::Theme AppSettings::defaultTheme()
 
 bool AppSettings::adaptParamsForIOEngine(Global::BenchmarkParams &params) const
 {
-    if (getIOEngineName() == "fio-default") {
+    const auto eng = getIOEngineName();
+    if (eng == "fio-default (direct mode)" || eng == "vsync (direct mode)") {
         // this actually stands for "psync", a synchronous mode which
         // makes fio warn about (but otherwise ignore) multiple queues.
         // We do this in a separate function rather than in getBenchmarkParams()

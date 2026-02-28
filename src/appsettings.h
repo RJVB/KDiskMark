@@ -66,6 +66,7 @@ public:
 
     QString getIOEngineName() const;
     void setIOEngineName(const QString &engineName);
+    bool isSyncIOEngine() const;
 
     bool getCacheBypassState() const;
     void setCacheBypassState(bool cacheBypassState);
