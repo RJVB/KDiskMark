@@ -104,6 +104,7 @@ Languages currently available:
 * Hungarian
 * Italian
 * Japanese
+* Korean
 * Polish
 * Portuguese (Brazilian)
 * Russian
